@@ -1,25 +1,33 @@
 ﻿using Discord;
 using Discord.Audio;
 using Discord.Commands;
+using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TopliBOT.Helpers;
+using Victoria;
 using YoutubeExplode;
-
+using Victoria.Enums;
+using System.Linq;
+using Victoria.Responses.Search;
 namespace TopliBOT.Modules
 {
-    public class Ping : ModuleBase<SocketCommandContext>
+    public class BotCommands : ModuleBase<SocketCommandContext>
     {
 
         private IAudioClient _client;
         private static YoutubeClient _youtubeClient;
         private static MemoryStream _stream;
-        public Ping()
+        private MusicHelper _musicHelper;
+        private LavaNode _node;
+        public BotCommands(MusicHelper musicHelper, LavaNode node)
         {
-
+            _musicHelper = musicHelper;
+            _node = node;
         }
 
         [Command("Ping")]
@@ -95,6 +103,7 @@ namespace TopliBOT.Modules
         [Command("bing", RunMode = RunMode.Async)]
         public async Task JoinChannel()
         {
+            string p = AppDomain.CurrentDomain.BaseDirectory;
             string path = @"C:\Users\senad\source\repos\TopliBOT\TopliBOT\bing.mp3";
             await PlayAudioFromFileAsync(path);
 
@@ -122,13 +131,69 @@ namespace TopliBOT.Modules
                 await _client.StopAsync();
         }
 
-        [Command("play", RunMode = RunMode.Async)]
+        [Command("p", RunMode = RunMode.Async)]
         public async Task PlayYtAsync([Remainder] string path)
         {
             // await Context.Channel.SendMessageAsync("Svira Radio miljacka");
             await PlayYoutubeAsync(path);
         }
 
+        [Command("join")]
+        public async Task JoinAsync()
+        {
+            if (_node.HasPlayer(Context.Guild))
+            {
+                await ReplyAsync("I'm already connected to a voice channel!");
+                return;
+            }
 
+            var voiceState = Context.User as SocketGuildUser;
+            if (voiceState?.VoiceChannel == null)
+            {
+                await ReplyAsync("You must be connected to a voice channel!");
+                return;
+            }
+
+            try
+            {
+                await _musicHelper.ConnectAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
+                await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
+            }
+            catch (Exception exception)
+            {
+                await ReplyAsync(exception.Message);
+            }
+        }
+
+        [Command("play")]
+        public async Task PlayAsync([Remainder] string path)
+        {
+            if(!_node.HasPlayer(Context.Guild))
+            {
+                var voiceState = Context.User as SocketGuildUser;
+                if (voiceState?.VoiceChannel == null)
+                {
+                    await ReplyAsync("You must be connected to a voice channel!");
+                    return;
+                }
+
+                await _musicHelper.ConnectAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
+            }
+            string p = @"C:\Users\senad\source\repos\TopliBOT\TopliBOT\ed.mp3";
+            var search = await _node.SearchAsync(SearchType.Direct,p);
+
+            var player = _node.GetPlayer(Context.Guild);
+            var track = search.Tracks.FirstOrDefault();
+            if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
+            {
+                player.Queue.Enqueue(track);
+                await ReplyAsync($"```Added {track.Title} to queue.```");
+            }
+            else
+            {
+                await player.PlayAsync(track);
+                await ReplyAsync($"Now Playing: {track.Title}");
+            }
+        }   
     }
 }

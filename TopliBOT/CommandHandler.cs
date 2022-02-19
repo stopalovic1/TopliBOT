@@ -13,17 +13,20 @@ namespace TopliBOT
     {
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
+        private readonly IServiceProvider _serviceProvider;
 
-        public CommandHandler(DiscordSocketClient client, CommandService commands)
+        public CommandHandler(DiscordSocketClient client, CommandService commands, IServiceProvider serviceProvider)
         {
             _client = client;
             _commands = commands;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task InitializeAsync()
         {
+            
+            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _serviceProvider);
             _client.MessageReceived += HandleCommandAsync;
-            await _commands.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: null);
         }
 
         private async Task HandleCommandAsync(SocketMessage MessageParam)
@@ -38,7 +41,7 @@ namespace TopliBOT
 
             var context = new SocketCommandContext(_client, message);
 
-            await _commands.ExecuteAsync(context: context, argPos: ArgPos, services: null);
+            await _commands.ExecuteAsync(context: context, argPos: ArgPos, services: _serviceProvider);
         }
 
 

@@ -7,12 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using YoutubeExplode;
+using YoutubeExplode.Videos.Streams;
 
 namespace TopliBOT
 {
     public static class BotHelperMethods
     {
-
+           
         private static Process CreateStream(string path)
         {
             return Process.Start(new ProcessStartInfo
@@ -39,7 +40,7 @@ namespace TopliBOT
         public static async Task PlayYoutubeAsync(IAudioClient client, YoutubeClient youtubeClient, string link, MemoryStream memoryStream)
         {
             var streamManifest = await youtubeClient.Videos.Streams.GetManifestAsync(link);
-            var StreamInfo = streamManifest.GetAudioOnlyStreams().FirstOrDefault();
+            var StreamInfo = streamManifest.GetAudioOnlyStreams().TryGetWithHighestBitrate();
             var stream = await youtubeClient.Videos.Streams.GetAsync(StreamInfo);
 
             await Cli.Wrap("ffmpeg")
@@ -54,10 +55,6 @@ namespace TopliBOT
                 finally { await discord.FlushAsync(); }
             }
 
-            Console.WriteLine();
-
         }
-
-
     }
 }
