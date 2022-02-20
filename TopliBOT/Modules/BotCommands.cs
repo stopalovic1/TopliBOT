@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using System.Text;
 using TopliBOT.Helpers;
 using Victoria;
 using Victoria.Enums;
@@ -42,8 +43,6 @@ namespace TopliBOT.Modules
             var user = Context.Message.MentionedUsers;
             await Discord.UserExtensions.SendMessageAsync(user.FirstOrDefault(), "Hocel to rodjeni");
         }
-
-
 
 
         private async Task PlayFromFileAsync(string path, string name)
@@ -217,5 +216,31 @@ namespace TopliBOT.Modules
 
         }
 
+        [Command("queue")]
+        public async Task GetSongsFromQueueAsync()
+        {
+            if (!_node.TryGetPlayer(Context.Guild, out var player))
+            {
+                await ReplyAsync("Nisam konektovan.");
+                return;
+            }
+
+            var tracks = player.Queue;
+            var stringBuilder = new StringBuilder();
+            if (tracks.Count > 0)
+            {
+                foreach (var track in tracks)
+                {
+                    stringBuilder.AppendLine(track.Title);
+                }
+                await ReplyAsync("`" + stringBuilder.ToString() + "`");
+            }
+            else
+            {
+                await ReplyAsync("`Kvekve prazan.`");
+            }
+
+
+        }
     }
 }
