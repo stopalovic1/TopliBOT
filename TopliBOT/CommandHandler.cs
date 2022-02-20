@@ -1,11 +1,6 @@
 ﻿using Discord.Commands;
 using Discord.WebSocket;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TopliBOT
 {
@@ -36,8 +31,7 @@ namespace TopliBOT
 
             int ArgPos = 0;
 
-            // If there's no prefix or the message is from a bot then nothing happens
-            if (!(message.HasCharPrefix('#', ref ArgPos) || message.HasMentionPrefix(_client.CurrentUser, ref ArgPos)) || message.Author.IsBot) return;
+            if (!(message.HasCharPrefix('!', ref ArgPos) || message.HasMentionPrefix(_client.CurrentUser, ref ArgPos)) || message.Author.IsBot) return;
 
             var context = new SocketCommandContext(_client, message);
 

@@ -1,10 +1,5 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Victoria;
 using Victoria.EventArgs;
 
@@ -19,8 +14,6 @@ namespace TopliBOT.Helpers
             _node = node;
             _discordSocketClient = discordSocketClient;
         }
-
-
 
         public Task InitializeAsync()
         {
@@ -41,18 +34,17 @@ namespace TopliBOT.Helpers
             var player = args.Player;
             if (!player.Queue.TryDequeue(out var queueable))
             {
-                await player.TextChannel.SendMessageAsync("Queue completed!");
                 return;
             }
 
-            if (!(queueable is LavaTrack track))
+            if (queueable is not LavaTrack track)
             {
                 await player.TextChannel.SendMessageAsync("Next item in queue is not a track.");
                 return;
             }
 
             await args.Player.PlayAsync(track);
-            await args.Player.TextChannel.SendMessageAsync($"```Now playing: {track.Title}```");
+            await args.Player.TextChannel.SendMessageAsync($"`Sada svira: {track.Title}`");
         }
 
 
@@ -64,7 +56,6 @@ namespace TopliBOT.Helpers
                 try
                 {
                     await _node.ConnectAsync();
-                    var s = _node.IsConnected;
                 }
                 catch (Exception ex)
                 {
