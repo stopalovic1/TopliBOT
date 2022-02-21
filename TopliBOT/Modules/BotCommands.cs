@@ -5,7 +5,7 @@ using System.Text;
 using TopliBOT.Helpers;
 using Victoria;
 using Victoria.Enums;
-using Victoria.Responses.Search;
+using Victoria.Responses.Rest;
 namespace TopliBOT.Modules
 {
     public class BotCommands : ModuleBase<SocketCommandContext>
@@ -13,16 +13,25 @@ namespace TopliBOT.Modules
 
         private MusicHelper _musicHelper;
         private LavaNode _node;
+
         public BotCommands(MusicHelper musicHelper, LavaNode node)
         {
             _musicHelper = musicHelper;
             _node = node;
         }
 
-        [Command("Ping")]
-        public async Task Pong()
+        [Command("ping")]
+        public async Task Pong([Remainder] string path)
         {
-            await ReplyAsync("PONG!");
+
+            try
+            {
+                await ReplyAsync("PONG!");
+            }
+            catch (Exception ex)
+            {
+                await ReplyAsync(ex.Message);
+            }
         }
 
         [Command("edis")]
@@ -41,7 +50,7 @@ namespace TopliBOT.Modules
         public async Task SemaAsync([Remainder] string a)
         {
             var user = Context.Message.MentionedUsers;
-            await Discord.UserExtensions.SendMessageAsync(user.FirstOrDefault(), "Hocel to rodjeni");
+            await UserExtensions.SendMessageAsync(user.FirstOrDefault(), "Hocel to rodjeni");
         }
 
 
@@ -60,11 +69,11 @@ namespace TopliBOT.Modules
             }
 
             var player = _node.GetPlayer(Context.Guild);
-            var track = await _node.SearchAsync(SearchType.Direct, path);
+            var track = await _node.SearchAsync(path);
             if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
             {
                 player.Queue.Enqueue(track.Tracks.FirstOrDefault());
-                await ReplyAsync("`Emousnl demedz dodan u kvekve.`");
+                await ReplyAsync($"`{name} dodan u kvekve.`");
             }
             else
             {
@@ -78,16 +87,26 @@ namespace TopliBOT.Modules
         [Command("steta", RunMode = RunMode.Async)]
         public async Task StetaAsync()
         {
-            string path = @"C:\Users\senad\source\repos\TopliBOT\TopliBOT\ed.mp3";
+            string path = @"C:\Users\senad\source\repos\TopliBOT\TopliBOT\MusicFiles\ed.mp3";
             await PlayFromFileAsync(path, "Emousnl demedz");
         }
 
-        [Command("radio", RunMode = RunMode.Async)]
-        public async Task RadioAsync()
+        [Command("miljacka", RunMode = RunMode.Async)]
+        public async Task MiljackaAsync()
         {
-            string path = @"http://stream.rsg.ba:9000/;stream";
+            //var pathOfFiles = AppDomain.CurrentDomain.BaseDirectory;
+            string path = @"https://radiomiljacka-bhcloud.radioca.st/stream.mp3";
             await PlayFromFileAsync(path, "Radio Miljacka");
         }
+
+        [Command("rsg", RunMode = RunMode.Async)]
+        public async Task RsgAsync()
+        {
+            //var pathOfFiles = AppDomain.CurrentDomain.BaseDirectory;
+            string path = @"http://stream.rsg.ba:9000/;stream";
+            await PlayFromFileAsync(path, "Radio RSG");
+        }
+
 
 
         [Command("join")]
@@ -95,21 +114,21 @@ namespace TopliBOT.Modules
         {
             if (_node.HasPlayer(Context.Guild))
             {
-                await ReplyAsync("Vec sam tu brale.");
+                await ReplyAsync("`Vec sam tu brale.`");
                 return;
             }
 
             var voiceState = Context.User as SocketGuildUser;
             if (voiceState?.VoiceChannel == null)
             {
-                await ReplyAsync("Moras bit u voice kanalu roki.");
+                await ReplyAsync("`Moras bit u voice kanalu roki.`");
                 return;
             }
 
             try
             {
                 await _musicHelper.ConnectAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                await ReplyAsync($"Usao u {voiceState.VoiceChannel.Name}!");
+                await ReplyAsync($"`Usao u {voiceState.VoiceChannel.Name}!`");
             }
             catch (Exception exception)
             {
@@ -117,16 +136,17 @@ namespace TopliBOT.Modules
             }
         }
 
-        [Command("play")]
+        [Command("play", RunMode = RunMode.Async)]
         public async Task PlayAsync([Remainder] string path)
         {
             var voiceState = Context.User as SocketGuildUser;
 
             if (voiceState?.VoiceChannel == null)
             {
-                await ReplyAsync("Moras bit u voice kanalu roki.");
+                await ReplyAsync("`Moras bit u voice kanalu roki.`");
                 return;
             }
+
             if (!_node.HasPlayer(Context.Guild))
             {
                 await _musicHelper.ConnectAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
@@ -137,23 +157,107 @@ namespace TopliBOT.Modules
 
             if (botUser.VoiceChannel != null && (botUser.VoiceChannel.Id != voiceState.VoiceChannel.Id))
             {
-                await ReplyAsync("Moras bit u voice kanalu roki.");
+                await ReplyAsync("`Moras bit u voice kanalu roki.`");
                 return;
             }
+            SearchResponse search;
 
-            var search = await _node.SearchAsync(SearchType.YouTube, path);
-            var player = _node.GetPlayer(Context.Guild);
-            var track = search.Tracks.FirstOrDefault();
-            if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
+            Uri uriResult;
+            bool isUrl = Uri.TryCreate(path, UriKind.Absolute, out uriResult)
+                && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+
+            if (isUrl)
             {
-                player.Queue.Enqueue(track);
-                await ReplyAsync($"`{track.Title} dodano u kvekve.`");
+                search = await _node.SearchAsync(path);
             }
             else
             {
-                await player.PlayAsync(track);
-                await ReplyAsync($"`Sada svira: {track.Title}`");
+                search = await _node.SearchYouTubeAsync(path);
             }
+
+
+
+            /*if (path.Contains("music.youtube.com"))   Leaving this here beacuse of victoria bug ??
+            {
+                var playlistPath = path.Substring(path.IndexOf('?') + 1);
+                var parsedPlaylistPath = @"https://youtube.com/playlist?" + playlistPath;
+                search = await _node.SearchAsync(SearchType.Direct, parsedPlaylistPath);
+
+            }
+            else if (path.Contains("youtube.com"))
+            {
+                if (path.Contains("list"))
+                {
+                    var playlistPath = path.Substring(path.IndexOf('&') + 1);
+                    var parsedPlaylist = @"https://youtube.com/playlist?" + playlistPath;
+                    search = await _node.SearchAsync(SearchType.Direct, parsedPlaylist);
+                }
+                else
+                {
+                    search = await _node.SearchAsync(SearchType.Direct, path);
+                }
+            }
+
+            else
+            {
+                search = await _node.SearchAsync(SearchType.YouTube, path);
+            }*/
+
+
+            if (search.LoadStatus == LoadStatus.NoMatches || search.LoadStatus == LoadStatus.LoadFailed)
+            {
+                await ReplyAsync("`Nisam nista nasao braco.`");
+                return;
+            }
+
+            var player = _node.GetPlayer(Context.Guild);
+            if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
+            {
+
+                if (search.Playlist.Name != null)
+                {
+                    foreach (var track in search.Tracks)
+                    {
+                        player.Queue.Enqueue(track);
+                    }
+
+                    await ReplyAsync($"`Dodano {search.Tracks.Count} pjesama`");
+                }
+                else
+                {
+                    var track = search.Tracks.FirstOrDefault();
+                    player.Queue.Enqueue(track);
+                    await ReplyAsync($"`{track.Title} dodano u kvekve.`");
+                }
+
+            }
+            else
+            {
+                var track = search.Tracks.FirstOrDefault();
+                if (search.Playlist.Name != null)
+                {
+                    var parsedSearch = search.Tracks.ToList();
+                    for (var i = 0; i < parsedSearch.Count; i++)
+                    {
+                        if (i == 0)
+                        {
+                            await player.PlayAsync(track);
+                            await ReplyAsync($"`Sada svira: {track.Title}`");
+                        }
+                        else
+                        {
+                            player.Queue.Enqueue(parsedSearch[i]);
+                        }
+                    }
+                    await ReplyAsync($"`Dodano {parsedSearch.Count} pjesama`");
+                }
+                else
+                {
+                    await player.PlayAsync(track);
+                    await ReplyAsync($"`Sada svira: {track.Title}`");
+                }
+            }
+
 
         }
 
@@ -162,12 +266,12 @@ namespace TopliBOT.Modules
         {
             if (!_node.TryGetPlayer(Context.Guild, out var player))
             {
-                await ReplyAsync("Nisam konektovan.");
+                await ReplyAsync("`Nisam konektovan.`");
                 return;
             }
             if (player.PlayerState == PlayerState.Stopped)
             {
-                await ReplyAsync("Vec sam stopiran rodjak");
+                await ReplyAsync("`Vec sam stopiran rodjak.`");
                 return;
             }
             try
@@ -186,13 +290,13 @@ namespace TopliBOT.Modules
         {
             if (!_node.TryGetPlayer(Context.Guild, out var player))
             {
-                await ReplyAsync("Nisam konektovan.");
+                await ReplyAsync("`Nisam konektovan.`");
                 return;
             }
 
             if (player.PlayerState != PlayerState.Playing)
             {
-                await ReplyAsync("Vec si stopiran bajo moj.");
+                await ReplyAsync("`Vec si stopiran bajo moj.`");
                 return;
             }
 
@@ -200,8 +304,8 @@ namespace TopliBOT.Modules
             {
                 if (player.Queue.Count > 0)
                 {
-                    await player.SkipAsync();
-                    await ReplyAsync($"`Pjesma preskocena.\nSada svira: {player.Track.Title}`");
+                    var currentTrack = await player.SkipAsync();
+                    await ReplyAsync($"`Pjesma preskocena.\nSada svira: {currentTrack.Title}`");
                 }
                 else
                 {
@@ -216,12 +320,46 @@ namespace TopliBOT.Modules
 
         }
 
+
+        [Command("clear", RunMode = RunMode.Async)]
+        public async Task ClearAsync()
+        {
+            var voiceState = Context.User as SocketGuildUser;
+
+            if (voiceState?.VoiceChannel == null)
+            {
+                await ReplyAsync("`Moras bit u voice kanalu roki.`");
+                return;
+            }
+
+            if (!_node.HasPlayer(Context.Guild))
+            {
+                await ReplyAsync("`Nisam konektovan.`");
+                return;
+            }
+
+            var bot = await Context.Channel.GetUserAsync(Context.Client.CurrentUser.Id);
+            var botUser = bot as IGuildUser;
+
+            if (botUser.VoiceChannel != null && (botUser.VoiceChannel.Id != voiceState.VoiceChannel.Id))
+            {
+                await ReplyAsync("`Moras bit u voice kanalu roki.`");
+                return;
+            }
+
+            _node.TryGetPlayer(Context.Guild, out var player);
+            player.Queue.Clear();
+            await ReplyAsync("`Kvekve ociscen.`");
+        }
+
+
+
         [Command("queue")]
         public async Task GetSongsFromQueueAsync()
         {
             if (!_node.TryGetPlayer(Context.Guild, out var player))
             {
-                await ReplyAsync("Nisam konektovan.");
+                await ReplyAsync("`Nisam konektovan.`");
                 return;
             }
 
@@ -233,14 +371,46 @@ namespace TopliBOT.Modules
                 {
                     stringBuilder.AppendLine(track.Title);
                 }
-                await ReplyAsync("`" + stringBuilder.ToString() + "`");
+                try
+                {
+                    await ReplyAsync("```" + stringBuilder.ToString() + "```");
+                }
+                catch (Exception ex)
+                {
+                    await ReplyAsync(ex.Message);
+                }
             }
             else
             {
                 await ReplyAsync("`Kvekve prazan.`");
             }
+        }
 
+        [Command("help")]
+        public async Task ShowHelpAsync()
+        {
+
+            string help = "!play - Pusta pjesmu\n";
+            help += "!stop - Zaustavlja pjesmu\n";
+            help += "!skip - Skipa pjesmu\n";
+            help += "!queue - Trenutni kvekve pjesama\n";
+            help += "!clear - Cisti kvekve\n";
+            help += "!miljacka - Pusta radio Miljacka\n";
+            help += "!rsg - Pusta radio RSG\n";
+            help += "!steta - Emousnl demedz\n";
+            help += "!bing - Bing Chilling";
+
+            var embed = new EmbedBuilder();
+
+            embed.WithAuthor(Context.Client.CurrentUser)
+                .WithFooter(footer => footer.Text = $"Zatrazeno od: {(Context.User as SocketGuildUser).Username}")
+                .WithColor(Color.Blue)
+                .WithTitle("Komande")
+                .WithDescription(help)
+                .WithCurrentTimestamp();
+            await ReplyAsync(embed: embed.Build());
 
         }
+
     }
 }

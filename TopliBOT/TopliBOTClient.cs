@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using TopliBOT.Helpers;
 using Victoria;
+using YoutubeExplode;
 
 namespace TopliBOT
 {
@@ -50,6 +51,7 @@ namespace TopliBOT
                 .AddLavaNode(x => { x.SelfDeaf = false;  })
                 .AddSingleton<LavaConfig>()
                 .AddSingleton<MusicHelper>()
+                .AddSingleton<YoutubeClient>()
                 .BuildServiceProvider();
 
     }

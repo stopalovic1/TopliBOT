@@ -2,7 +2,7 @@
 using Discord.WebSocket;
 using Victoria;
 using Victoria.EventArgs;
-
+using Victoria.Enums;
 namespace TopliBOT.Helpers
 {
     public class MusicHelper
@@ -31,6 +31,9 @@ namespace TopliBOT.Helpers
         private async Task OnTrackEnded(TrackEndedEventArgs args)
         {
 
+            if (!args.Reason.HasFlag(TrackEndReason.Finished))
+                return;
+
             var player = args.Player;
             if (!player.Queue.TryDequeue(out var queueable))
             {
@@ -39,7 +42,7 @@ namespace TopliBOT.Helpers
 
             if (queueable is not LavaTrack track)
             {
-                await player.TextChannel.SendMessageAsync("Next item in queue is not a track.");
+                await player.TextChannel.SendMessageAsync("`Belaj sa trakom rodjak.`");
                 return;
             }
 
