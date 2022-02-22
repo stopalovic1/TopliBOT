@@ -84,6 +84,25 @@ namespace TopliBOT.Modules
 
 
 
+        private EmbedBuilder BuildEmbed(string footerText, string title, LavaTrack track, string thumbUrl)
+        {
+            var embedBuilder = new EmbedBuilder();
+            embedBuilder
+               .WithFooter(footer => footer.Text = footerText)
+               .WithColor(Color.Blue)
+               .WithTitle(title)
+               .WithDescription("[" + track.Title + "]" + "(" + track.Url + ")")
+               .WithThumbnailUrl(thumbUrl)
+               .WithCurrentTimestamp();
+
+            return embedBuilder;
+        }
+
+
+
+
+
+
         [Command("steta", RunMode = RunMode.Async)]
         public async Task StetaAsync()
         {
@@ -234,6 +253,7 @@ namespace TopliBOT.Modules
             else
             {
                 var track = search.Tracks.FirstOrDefault();
+                var thumbUrl = $"https://i.ytimg.com/vi/{track.Id}/mqdefault.jpg";
                 if (search.Playlist.Name != null)
                 {
                     var parsedSearch = search.Tracks.ToList();
@@ -242,7 +262,9 @@ namespace TopliBOT.Modules
                         if (i == 0)
                         {
                             await player.PlayAsync(track);
-                            await ReplyAsync($"`Sada svira: {track.Title}`");
+
+                            var embed = BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Sada svira: ", track, thumbUrl);
+                            await ReplyAsync(embed: embed.Build());
                         }
                         else
                         {
@@ -254,7 +276,8 @@ namespace TopliBOT.Modules
                 else
                 {
                     await player.PlayAsync(track);
-                    await ReplyAsync($"`Sada svira: {track.Title}`");
+                    var embed = BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Sada svira: ", track, thumbUrl);
+                    await ReplyAsync(embed: embed.Build());
                 }
             }
 
