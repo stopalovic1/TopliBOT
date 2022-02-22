@@ -2,9 +2,9 @@
 
 public class Program
 {
-    public static Task Main(string[] args) => new Program().MainAsync();
-    public  async Task MainAsync()
+    public static async Task Main(string[] args)
     {
         await new TopliBOTClient().InitializeAsync();
     }
+
 }

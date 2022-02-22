@@ -4,7 +4,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using TopliBOT.Helpers;
 using Victoria;
-using YoutubeExplode;
 
 namespace TopliBOT
 {
@@ -22,7 +21,7 @@ namespace TopliBOT
 
         public async Task InitializeAsync()
         {
-            var token = File.ReadAllText(@"C:\Users\senad\source\repos\TopliBOT\TopliBOT\token.txt");
+            var token = await File.ReadAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Tokens/botToken.txt");
 
             await _socketClient.LoginAsync(TokenType.Bot, token);
             await _socketClient.StartAsync();
@@ -48,10 +47,10 @@ namespace TopliBOT
                 => new ServiceCollection()
                 .AddSingleton(_socketClient)
                 .AddSingleton(_commandService)
-                .AddLavaNode(x => { x.SelfDeaf = false;  })
+                .AddLavaNode(x => { x.SelfDeaf = false; })
                 .AddSingleton<LavaConfig>()
                 .AddSingleton<MusicHelper>()
-                .AddSingleton<YoutubeClient>()
+                .AddTransient<HelperMethods>()
                 .BuildServiceProvider();
 
     }

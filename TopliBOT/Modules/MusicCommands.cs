@@ -8,125 +8,19 @@ using Victoria.Enums;
 using Victoria.Responses.Rest;
 namespace TopliBOT.Modules
 {
-    public class BotCommands : ModuleBase<SocketCommandContext>
+    public class MusicCommands : ModuleBase<SocketCommandContext>
     {
 
         private MusicHelper _musicHelper;
         private LavaNode _node;
+        private readonly HelperMethods _helperMethods;
 
-        public BotCommands(MusicHelper musicHelper, LavaNode node)
+        public MusicCommands(MusicHelper musicHelper, LavaNode node, HelperMethods helperMethods)
         {
             _musicHelper = musicHelper;
             _node = node;
+            _helperMethods = helperMethods;
         }
-
-        [Command("ping")]
-        public async Task Pong([Remainder] string path)
-        {
-
-            try
-            {
-                await ReplyAsync("PONG!");
-            }
-            catch (Exception ex)
-            {
-                await ReplyAsync(ex.Message);
-            }
-        }
-
-        [Command("edis")]
-        public async Task EdisAsync()
-        {
-            await ReplyAsync("Djes edise");
-        }
-
-        [Command("keno")]
-        public async Task KenoAsync()
-        {
-            await ReplyAsync("EEEE OKO IZO JE");
-        }
-
-        [Command("sema")]
-        public async Task SemaAsync([Remainder] string a)
-        {
-            var user = Context.Message.MentionedUsers;
-            await UserExtensions.SendMessageAsync(user.FirstOrDefault(), "Hocel to rodjeni");
-        }
-
-
-        private async Task PlayFromFileAsync(string path, string name)
-        {
-            if (!_node.HasPlayer(Context.Guild))
-            {
-                var voiceState = Context.User as SocketGuildUser;
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsync("Moras bit u voice kanalu roki.");
-                    return;
-                }
-
-                await _musicHelper.ConnectAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-            }
-
-            var player = _node.GetPlayer(Context.Guild);
-            var track = await _node.SearchAsync(path);
-            if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
-            {
-                player.Queue.Enqueue(track.Tracks.FirstOrDefault());
-                await ReplyAsync($"`{name} dodan u kvekve.`");
-            }
-            else
-            {
-                await player.PlayAsync(track.Tracks.FirstOrDefault());
-                await ReplyAsync($"`Sada svira: {name}`");
-            }
-        }
-
-
-
-        private EmbedBuilder BuildEmbed(string footerText, string title, LavaTrack track, string thumbUrl)
-        {
-            var embedBuilder = new EmbedBuilder();
-            embedBuilder
-               .WithFooter(footer => footer.Text = footerText)
-               .WithColor(Color.Blue)
-               .WithTitle(title)
-               .WithDescription("[" + track.Title + "]" + "(" + track.Url + ")")
-               .WithThumbnailUrl(thumbUrl)
-               .WithCurrentTimestamp();
-
-            return embedBuilder;
-        }
-
-
-
-
-
-
-        [Command("steta", RunMode = RunMode.Async)]
-        public async Task StetaAsync()
-        {
-            string path = @"C:\Users\senad\source\repos\TopliBOT\TopliBOT\MusicFiles\ed.mp3";
-            await PlayFromFileAsync(path, "Emousnl demedz");
-        }
-
-        [Command("miljacka", RunMode = RunMode.Async)]
-        public async Task MiljackaAsync()
-        {
-            //var pathOfFiles = AppDomain.CurrentDomain.BaseDirectory;
-            string path = @"https://radiomiljacka-bhcloud.radioca.st/stream.mp3";
-            await PlayFromFileAsync(path, "Radio Miljacka");
-        }
-
-        [Command("rsg", RunMode = RunMode.Async)]
-        public async Task RsgAsync()
-        {
-            //var pathOfFiles = AppDomain.CurrentDomain.BaseDirectory;
-            string path = @"http://stream.rsg.ba:9000/;stream";
-            await PlayFromFileAsync(path, "Radio RSG");
-        }
-
-
 
         [Command("join")]
         public async Task JoinAsync()
@@ -136,14 +30,12 @@ namespace TopliBOT.Modules
                 await ReplyAsync("`Vec sam tu brale.`");
                 return;
             }
-
             var voiceState = Context.User as SocketGuildUser;
             if (voiceState?.VoiceChannel == null)
             {
                 await ReplyAsync("`Moras bit u voice kanalu roki.`");
                 return;
             }
-
             try
             {
                 await _musicHelper.ConnectAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
@@ -263,7 +155,7 @@ namespace TopliBOT.Modules
                         {
                             await player.PlayAsync(track);
 
-                            var embed = BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Sada svira: ", track, thumbUrl);
+                            var embed = _helperMethods.BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Sada svira: ", track.Title, track.Url, thumbUrl, Context.User);
                             await ReplyAsync(embed: embed.Build());
                         }
                         else
@@ -276,7 +168,7 @@ namespace TopliBOT.Modules
                 else
                 {
                     await player.PlayAsync(track);
-                    var embed = BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Sada svira: ", track, thumbUrl);
+                    var embed = _helperMethods.BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Sada svira: ", track.Title, track.Url, thumbUrl, Context.User);
                     await ReplyAsync(embed: embed.Build());
                 }
             }
@@ -328,7 +220,9 @@ namespace TopliBOT.Modules
                 if (player.Queue.Count > 0)
                 {
                     var currentTrack = await player.SkipAsync();
-                    await ReplyAsync($"`Pjesma preskocena.\nSada svira: {currentTrack.Title}`");
+                    var thumbUrl = $"https://i.ytimg.com/vi/{currentTrack.Id}/mqdefault.jpg";
+                    var embed = _helperMethods.BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Pjesma preskocena.\nSada svira: ", currentTrack.Title, currentTrack.Url, thumbUrl, Context.User);
+                    await ReplyAsync(embed: embed.Build());
                 }
                 else
                 {
@@ -408,32 +302,5 @@ namespace TopliBOT.Modules
                 await ReplyAsync("`Kvekve prazan.`");
             }
         }
-
-        [Command("help")]
-        public async Task ShowHelpAsync()
-        {
-
-            string help = "!play - Pusta pjesmu\n";
-            help += "!stop - Zaustavlja pjesmu\n";
-            help += "!skip - Skipa pjesmu\n";
-            help += "!queue - Trenutni kvekve pjesama\n";
-            help += "!clear - Cisti kvekve\n";
-            help += "!miljacka - Pusta radio Miljacka\n";
-            help += "!rsg - Pusta radio RSG\n";
-            help += "!steta - Emousnl demedz\n";
-            help += "!bing - Bing Chilling";
-
-            var embed = new EmbedBuilder();
-
-            embed.WithAuthor(Context.Client.CurrentUser)
-                .WithFooter(footer => footer.Text = $"Zatrazeno od: {(Context.User as SocketGuildUser).Username}")
-                .WithColor(Color.Blue)
-                .WithTitle("Komande")
-                .WithDescription(help)
-                .WithCurrentTimestamp();
-            await ReplyAsync(embed: embed.Build());
-
-        }
-
     }
 }

@@ -1,0 +1,6 @@
+﻿CREATE TABLE [dbo].[Prefixes]
+(
+	[Id] INT NOT NULL PRIMARY KEY IDENTITY(1,1), 
+    [GuildId] NVARCHAR(50) NOT NULL, 
+    [Prefix] NVARCHAR(5) NOT NULL
+)
