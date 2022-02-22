@@ -31,15 +31,18 @@ namespace TopliBOT
         private async Task HandleCommandAsync(SocketMessage MessageParam)
         {
             var message = MessageParam as SocketUserMessage;
+
             if (message == null) return;
             int ArgPos = 0;
+
             Prefixes data;
             var author = message.Author as SocketGuildUser;
+            if (author == null) return;
             var guildId = author.Guild.Id;
             var dbPath = await File.ReadAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Tokens/databaseToken.txt");
             using (IDbConnection connection = new SqlConnection(dbPath))
             {
-                data = (await connection.QueryAsync<Prefixes>("select * from dbo.Prefixes where GuildId=@GuildId;", new { GuildId = guildId.ToString() })).FirstOrDefault();
+                data = (await connection.QueryAsync<Prefixes>("select * from dbo.Prefixes where GuildId = @GuildId;", new { GuildId = guildId.ToString() })).FirstOrDefault();
             }
 
             var prefix = '!';
