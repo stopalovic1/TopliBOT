@@ -36,7 +36,7 @@ namespace TopliBOT
             int ArgPos = 0;
 
             Prefixes data;
-            var author = message.Author as SocketGuildUser;
+            SocketGuildUser author = message.Author as SocketGuildUser;
             if (author == null) return;
             var guildId = author.Guild.Id;
             var dbPath = await File.ReadAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Tokens/databaseToken.txt");

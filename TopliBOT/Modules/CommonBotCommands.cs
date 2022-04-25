@@ -2,21 +2,16 @@
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TopliBOT.Models;
 
 namespace TopliBOT.Modules
 {
     public class CommonBotCommands : ModuleBase<SocketCommandContext>
     {
-
-
+        private static bool isFirst = false;
+        private static DateTime currentTime = DateTime.MinValue;
         [Command("help")]
         public async Task ShowHelpAsync()
         {
@@ -66,7 +61,6 @@ namespace TopliBOT.Modules
                 if (data == null)
                 {
                     await connection.ExecuteAsync("insert into Prefixes(GuildId,Prefix) values(@GuildId,@Prefix);", new { GuildId = Context.Guild.Id.ToString(), Prefix = prefix[0] });
-
                 }
                 else
                 {
@@ -77,5 +71,59 @@ namespace TopliBOT.Modules
         }
 
 
+
+        [Command("fmod", RunMode = RunMode.Async)]
+        public async Task FmodAsync()
+        {
+            try
+            {
+                var diffrence = DateTime.Now - currentTime;
+                if (diffrence.TotalMinutes >= 1)
+                {
+                    isFirst = false;
+                }
+
+                if (!isFirst)
+                {
+                    isFirst = true;
+                    currentTime = DateTime.Now;
+                    await ReplyAsync("First message of the day +100xp xdlol");
+                }
+                else
+                {
+                    await ReplyAsync($"Moras cekat rodjak jos {60 - (int)diffrence.TotalSeconds} sekundi.");
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                await ReplyAsync(ex.Message);
+            }
+        }
+        //[Command("test")]
+        //public async Task BanAllAsync()
+        //{
+        //    try
+        //    {
+        //        var guild = Context.Guild;
+        //        var guildUsers = guild.GetUsersAsync();
+        //        var tasks = new List<Task>();
+        //        await foreach (var users in guildUsers)
+        //        {
+        //            foreach (var user in users)
+        //            {
+        //                Console.WriteLine(user.Id + " " + user.DisplayName + "\n");
+        //                //tasks.Add(user.BanAsync());
+        //            }
+        //        }
+        //        await Task.WhenAll(tasks);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex.Message);
+        //    }
+
+        //}
     }
 }

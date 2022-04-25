@@ -27,10 +27,11 @@ namespace TopliBOT
 
             await _socketClient.LoginAsync(TokenType.Bot, token);
             await _socketClient.StartAsync();
-            _socketClient.Log += Log;
 
+            _socketClient.Log += Log;
             _serviceProvider = SetupServices();
             _commandHandler = new CommandHandler(_socketClient, _commandService, _serviceProvider);
+
             await _commandHandler.InitializeAsync();
             await _serviceProvider.GetRequiredService<MusicHelper>().InitializeAsync();
             await Task.Delay(-1);

@@ -1,7 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using TopliBOT.Helpers;
-using Victoria;
 
 namespace TopliBOT.Modules
 {
@@ -34,7 +32,7 @@ namespace TopliBOT.Modules
         }
 
 
-        [Command("sema")]
+        [Command("tag")]
         public async Task SemaAsync([Remainder] string a)
         {
             var user = Context.Message.MentionedUsers;

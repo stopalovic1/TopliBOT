@@ -131,13 +131,15 @@ namespace TopliBOT.Modules
                     {
                         player.Queue.Enqueue(track);
                     }
-
-                    await ReplyAsync($"`Dodano {search.Tracks.Count} pjesama`");
+                    var embed = _helperMethods.BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Info: ", $"Dodano {search.Tracks.Count} pjesama", "", "", Context.User);
+                    await ReplyAsync(embed: embed.Build());
                 }
                 else
                 {
                     var track = search.Tracks.FirstOrDefault();
+                    var thumbUrl = $"https://i.ytimg.com/vi/{track.Id}/mqdefault.jpg";
                     player.Queue.Enqueue(track);
+                    var embed = _helperMethods.BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Dodano u kvekve: ", track.Title, track.Url, thumbUrl, Context.User);
                     await ReplyAsync($"`{track.Title} dodano u kvekve.`");
                 }
 
@@ -271,7 +273,7 @@ namespace TopliBOT.Modules
 
 
 
-        [Command("queue")]
+        [Command("queue", RunMode = RunMode.Async)]
         public async Task GetSongsFromQueueAsync()
         {
             if (!_node.TryGetPlayer(Context.Guild, out var player))
@@ -282,15 +284,28 @@ namespace TopliBOT.Modules
 
             var tracks = player.Queue;
             var stringBuilder = new StringBuilder();
+            var tasks = new List<Task>();
             if (tracks.Count > 0)
             {
                 foreach (var track in tracks)
                 {
+                    if (stringBuilder.Length + track.Title.Length >= 2000)
+                    {
+                        var embed = _helperMethods.BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Trenutni kvekve: ", stringBuilder.ToString(), "", "", Context.User);
+                        tasks.Add(ReplyAsync(embed: embed.Build()));
+                        stringBuilder.Clear();
+                    }
                     stringBuilder.AppendLine(track.Title);
                 }
+                await Task.WhenAll(tasks);
                 try
                 {
-                    await ReplyAsync("```" + stringBuilder.ToString() + "```");
+                    if (stringBuilder.Length != 0)
+                    {
+                        var embed = _helperMethods.BuildEmbed($"Zatrazeno od: {(Context.User as SocketGuildUser).Username}", "Trenutni kvekve: ", stringBuilder.ToString(), "", "", Context.User);
+                        await ReplyAsync(embed: embed.Build());
+                    }
+
                 }
                 catch (Exception ex)
                 {
